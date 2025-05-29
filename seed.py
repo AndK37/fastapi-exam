@@ -67,4 +67,7 @@ with Session(bind=engine) as session:
     course_record1 = models.CourseRecord(user_id=1, course_id=1, progression=0.33)
     session.add(course_record1)
 
+    completed_lesson = models.CompletedLesson(lesson_id=1, user_id=1)
+    session.add(completed_lesson)
+
     session.commit()

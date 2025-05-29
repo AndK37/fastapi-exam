@@ -84,5 +84,11 @@ class Lesson(Base):
     course = relationship('Course', backref='lessons')
 
 
+class CompletedLesson(Base):
+    __tablename__ = 'comleted_lessons'
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    lesson_id = Column(Integer, ForeignKey('lessons.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
 
-
+    lesson = relationship('Lesson', backref='comleted_lessons')
+    user = relationship('User', backref='comleted_lessons')
