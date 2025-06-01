@@ -10,7 +10,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     surname = Column(String(32), nullable=False)
     name = Column(String(32), nullable=False)
-    email = Column(String(64), nullable=False)
+    email = Column(String(64), nullable=False, unique=True)
     password_hash = Column(String(255), nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id'))
 
@@ -20,7 +20,7 @@ class User(Base):
 class Role(Base):
     __tablename__ = 'roles'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = Column(String(32), nullable=False)
+    name = Column(String(32), nullable=False, unique=True)
 
 
 class CourseRecord(Base):
@@ -53,13 +53,13 @@ class Course(Base):
 class Category(Base):
     __tablename__ = 'categories'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = Column(String(32), nullable=False)
+    name = Column(String(32), nullable=False, unique=True)
 
 
 class Difficulty(Base):
     __tablename__ = 'difficulties'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = Column(String(32), nullable=False)
+    name = Column(String(32), nullable=False, unique=True)
 
 
 class CourseLesson(Base):

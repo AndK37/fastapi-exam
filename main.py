@@ -1,5 +1,4 @@
-from fastapi import FastAPI, Depends,HTTPException
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import *
 
@@ -21,3 +20,9 @@ app = FastAPI()
 #     allow_headers=["*"],
 # )
 
+app.include_router(categories_router)
+app.include_router(courses_router)
+app.include_router(difficulties_router)
+app.include_router(lessons_router)
+app.include_router(roles_router)
+app.include_router(users_router)

@@ -3,10 +3,16 @@ from database import engine
 import models
 from datetime import date
 import os
+from auth import AuthHandler
+
 
 
 models.Base.metadata.drop_all(bind=engine)
 models.Base.metadata.create_all(bind=engine)
+
+auth_handler = AuthHandler()
+
+
 
 with Session(bind=engine) as session:
     role1 = models.Role(name='Студент')
@@ -15,9 +21,9 @@ with Session(bind=engine) as session:
     roles = [role1, role2, role3]
     session.add_all(roles)
 
-    user1 = models.User(surname='Петров', name='Алексей', email='alexey.petrov@mail.com', password_hash='1', role_id=1)
-    user2 = models.User(surname='Васильева', name='Ольга', email='olga.vasilyeva@yandex.ru', password_hash='1', role_id=2)
-    user3 = models.User(surname='Соколовская', name='Екатерина', email='ekaterina.sokolovskaya@gmail.com', password_hash='1', role_id=3)
+    user1 = models.User(surname='Петров', name='Алексей', email='alexey.petrov@mail.com', password_hash=auth_handler.get_password_hash('QWErty123#'), role_id=1)
+    user2 = models.User(surname='Васильева', name='Ольга', email='olga.vasilyeva@yandex.ru', password_hash=auth_handler.get_password_hash('QWErty123#'), role_id=2)
+    user3 = models.User(surname='Соколовская', name='Екатерина', email='ekaterina.sokolovskaya@gmail.com', password_hash=auth_handler.get_password_hash('QWErty123#'), role_id=3)
     users = [user1, user2, user3]
     session.add_all(users)
 
