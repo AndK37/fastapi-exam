@@ -25,3 +25,5 @@ def login(user: pyd.UserLogin, db: Session=Depends(get_db)):
         return {'token': token}
     else:
         raise HTTPException(401, 'Неправильный пароль')
+    
+

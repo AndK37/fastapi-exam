@@ -5,7 +5,6 @@ import re
 # TODO: Схемы не готовы
 
 class CreateUser(BaseModel):
-    id: int = Field(example=1)
     surname: str = Field(example='Иванов')
     name: str = Field(example='Иван')
     email: str = Field(example='example@mail.com', max_length=64, pattern=re.compile(r'[^@]+@[^@]+\.[^@]+'))
@@ -18,12 +17,10 @@ class UserLogin(BaseModel):
 
 
 class CreateRole(BaseModel):
-    id: int = Field(example=1)
     name: str = Field(example='Студент', min_length=1, max_length=32)
 
 
 class CreateCourse(BaseModel):
-    id: int = Field(example=1)
     name: str = Field(example='Программирование')
     desc: str | None = Field(example='')
     price: float = Field(example=5000.0)
@@ -34,12 +31,10 @@ class CreateCategory(BaseModel):
 
 
 class CreateDifficulty(BaseModel):
-    id: int = Field(example=1)
     name: str = Field(example='Легко', min_length=1, max_length=32)
 
 
 class CreateLesson(BaseModel):
-    id: int = Field(example=1)
     name: str = Field(example='Программирование 1')
     video_url: str = Field(example='./videos/prog1.mp4')
     duration: float = Field(example=40.0)
