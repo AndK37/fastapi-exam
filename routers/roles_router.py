@@ -11,80 +11,85 @@ from auth import AuthHandler
 router = APIRouter(prefix='/api/roles', tags=['Roles'])
 auth_handler = AuthHandler()
 
+models_entity = models.Role
+pyd_base = pyd.BaseRole
+pyd_create = pyd.CreateRole
 
+message_404 = 'Роль не найдена'
+message_404_many = 'Роли не найдены'
+message_already_exists = 'Роль уже существует'
+def delete_message(name):
+    return f'Роль \'{name}\' удалена'
 
-@router.get('/', response_model=List[pyd.BaseRole])
-def get_all_roles(db: Session=Depends(get_db)):
-    roles = db.query(models.Role).all()
-
-    if not roles:
-        raise HTTPException(404, 'Роли не найдены')
-
-    return roles
-
-
-@router.get('/{role_id}', response_model=pyd.BaseRole)
-def get_role(role_id: int, db: Session=Depends(get_db)):
-    role = db.query(models.Role).filter(models.Role.id == role_id).first()
-
-    if not role:
-        raise HTTPException(404, 'Роль не найдена')
-
-    return role
-
-
-@router.post('/', response_model=pyd.BaseRole)
-def create_role(role: pyd.CreateRole, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+def auth(jwt, db):
     user_db = db.query(models.User).filter(models.User.email == jwt).first()
     if not user_db:
         raise HTTPException(404, 'Пользователь не найден')
     if user_db.role_id != 3:
         raise HTTPException(403, 'Доступ запрещен')
 
-    if db.query(models.Role).filter(models.Role.name == role.name).first():
-        raise HTTPException(400, 'Роль уже существует')
 
-    role_db = models.Role()
-    role_db.name = role.name
 
-    db.add(role_db)
+@router.get('/', response_model=List[pyd_base])
+def get_all_entities(db: Session=Depends(get_db)):
+    entities = db.query(models_entity).all()
+
+    if not entities:
+        raise HTTPException(404, message_404_many)
+
+    return entities
+
+
+@router.get('/{entity_id}', response_model=pyd_base)
+def get_entity(entity_id: int, db: Session=Depends(get_db)):
+    entity = db.query(models_entity).filter(models_entity.id == entity_id).first()
+
+    if not entity:
+        raise HTTPException(404, message_404)
+
+    return entity
+
+
+@router.post('/', response_model=pyd_base)
+def create_entity(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    auth(jwt, db)
+
+    if db.query(models_entity).filter(models_entity.name == entity.name).first():
+        raise HTTPException(400, message_already_exists)
+
+    entity_db = models_entity()
+    entity_db.name = entity.name
+
+    db.add(entity_db)
     db.commit()
 
-    return role_db
+    return entity_db
 
 
-@router.put('/{role_id}', response_model=pyd.BaseRole)
-def update_role(role_id: int, role: pyd.CreateRole, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_db = db.query(models.User).filter(models.User.email == jwt).first()
-    if not user_db:
-        raise HTTPException(404, 'Пользователь не найден')
-    if user_db.role_id != 3:
-        raise HTTPException(403, 'Доступ запрещен')
+@router.put('/{entity_id}', response_model=pyd_base)
+def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    auth(jwt, db)
 
-    role_db = db.query(models.Role).filter(models.Role.id == role_id).first()
-    if not role_db:
-        raise HTTPException(404, 'Роль не найдена')
+    entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
+    if not entity_db:
+        raise HTTPException(404, message_404)
     
-    role_db.name = role.name
+    entity_db.name = entity.name
 
     db.commit()
 
-    return role_db
+    return entity_db
 
 
-@router.delete('/{role_id}')
-def delete_role(role_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_db = db.query(models.User).filter(models.User.email == jwt).first()
-    if not user_db:
-        raise HTTPException(404, 'Пользователь не найден')
-    if user_db.role_id != 3:
-        raise HTTPException(403, 'Доступ запрещен')
+@router.delete('/{entity_id}')
+def delete_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    auth(jwt, db)
 
-    role_db = db.query(models.Role).filter(models.Role.id == role_id).first()
-    if not role_db:
-        raise HTTPException(404, 'Роль не найдена')
+    entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
+    if not entity_db:
+        raise HTTPException(404, message_404)
     
-    db.delete(role_db)
+    db.delete(entity_db)
     db.commit()
 
-    return {'message': f'Роль \'{role_db.name}\' удалена'}
+    return {'message': delete_message(entity_db.name)}

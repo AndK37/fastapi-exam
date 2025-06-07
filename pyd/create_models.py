@@ -35,6 +35,7 @@ class CreateDifficulty(BaseModel):
 
 
 class CreateLesson(BaseModel):
+    course_id: int = Field(example=1)
     name: str = Field(example='Программирование 1')
     video_url: str = Field(example='./videos/prog1.mp4')
     duration: float = Field(example=40.0)

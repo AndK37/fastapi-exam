@@ -11,82 +11,85 @@ from auth import AuthHandler
 router = APIRouter(prefix='/api/categories', tags=['Categories'])
 auth_handler = AuthHandler()
 
+models_entity = models.Category
+pyd_base = pyd.BaseCategory
+pyd_create = pyd.CreateCategory
 
+message_404 = 'Категория не найдена'
+message_404_many = 'Категории не найдены'
+message_already_exists = 'Категория уже существует'
+def delete_message(name):
+    return f'Категория \'{name}\' удалена'
 
-@router.get('/', response_model=List[pyd.BaseCategory])
-def get_all_categories(db: Session=Depends(get_db)):
-    categories = db.query(models.Category).all()
-
-    if not categories:
-        raise HTTPException(404, 'Категории не найдены')
-
-    return categories
-
-
-@router.get('/{category_id}', response_model=pyd.BaseCategory)
-def get_category(category_id: int, db: Session=Depends(get_db)):
-    category = db.query(models.Category).filter(models.Category.id == category_id).first()
-
-    if not category:
-        raise HTTPException(404, 'Категория не найдена')
-
-    return category
-
-
-@router.post('/', response_model=pyd.BaseCategory)
-def create_category(category: pyd.CreateCategory, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+def auth(jwt, db):
     user_db = db.query(models.User).filter(models.User.email == jwt).first()
     if not user_db:
         raise HTTPException(404, 'Пользователь не найден')
     if user_db.role_id != 3:
         raise HTTPException(403, 'Доступ запрещен')
 
-    if db.query(models.Category).filter(models.Category.name == category.name).first():
-        raise HTTPException(400, 'Категория уже существует')
 
-    category_db = models.Category()
-    category_db.name = category.name
 
-    db.add(category_db)
+@router.get('/', response_model=List[pyd_base])
+def get_all_entities(db: Session=Depends(get_db)):
+    entities = db.query(models_entity).all()
+
+    if not entities:
+        raise HTTPException(404, message_404_many)
+
+    return entities
+
+
+@router.get('/{entity_id}', response_model=pyd_base)
+def get_entity(entity_id: int, db: Session=Depends(get_db)):
+    entity = db.query(models_entity).filter(models_entity.id == entity_id).first()
+
+    if not entity:
+        raise HTTPException(404, message_404)
+
+    return entity
+
+
+@router.post('/', response_model=pyd_base)
+def create_entity(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    auth(jwt, db)
+
+    if db.query(models_entity).filter(models_entity.name == entity.name).first():
+        raise HTTPException(400, message_already_exists)
+
+    entity_db = models_entity()
+    entity_db.name = entity.name
+
+    db.add(entity_db)
     db.commit()
 
-    return category_db
+    return entity_db
 
 
-@router.put('/{category_id}', response_model=pyd.BaseCategory)
-def update_category(category_id: int, category: pyd.CreateCategory, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_db = db.query(models.User).filter(models.User.email == jwt).first()
-    if not user_db:
-        raise HTTPException(404, 'Пользователь не найден')
-    if user_db.role_id != 3:
-        raise HTTPException(403, 'Доступ запрещен')
+@router.put('/{entity_id}', response_model=pyd_base)
+def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    auth(jwt, db)
 
-    category_db = db.query(models.Category).filter(models.Category.id == category_id).first()
-    if not category_db:
-        raise HTTPException(404, 'Категория не найдена')
+    entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
+    if not entity_db:
+        raise HTTPException(404, message_404)
     
-    category_db.name = category.name
+    entity_db.name = entity.name
 
     db.commit()
 
-    return category_db
+    return entity_db
 
 
-@router.delete('/{category_id}')
-def delete_category(category_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_db = db.query(models.User).filter(models.User.email == jwt).first()
-    if not user_db:
-        raise HTTPException(404, 'Пользователь не найден')
-    if user_db.role_id != 3:
-        raise HTTPException(403, 'Доступ запрещен')
+@router.delete('/{entity_id}')
+def delete_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    auth(jwt, db)
 
-    category_db = db.query(models.Category).filter(models.Category.id == category_id).first()
-    if not category_db:
-        raise HTTPException(404, 'Категория не найдена')
+    entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
+    if not entity_db:
+        raise HTTPException(404, message_404)
     
-    db.delete(category_db)
+    db.delete(entity_db)
     db.commit()
 
-    return {'message': f'Категория \'{category_db.name}\' удалена'}
-
-
+    return {'message': delete_message(entity_db.name)}
