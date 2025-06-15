@@ -25,7 +25,7 @@ def auth(entity_id, jwt, db):
     user_db = db.query(models.User).filter(models.User.email == jwt).first()
     if not user_db:
         raise HTTPException(404, 'Пользователь не найден')
-    if user_db.role_id != 3:
+    if user_db.role_id != 3 and user_db.role_id != 2:
         raise HTTPException(403, 'Доступ запрещен')
     
     lesson = db.query(models.Lesson).filter(models.Lesson.id == entity_id).first()

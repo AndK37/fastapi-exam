@@ -2,14 +2,14 @@ from pydantic import BaseModel, Field
 from typing import List
 import re
 
-# TODO: Схемы не готовы
+
 
 class CreateUser(BaseModel):
     surname: str = Field(example='Иванов')
     name: str = Field(example='Иван')
     email: str = Field(example='example@mail.com', max_length=64, pattern=re.compile(r'[^@]+@[^@]+\.[^@]+'))
     password: str = Field(example='examplepass', max_length=32, pattern=re.compile(r'^.*(?=.{8,})(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$'))
-    role_id: int = Field()
+    role_id: int = Field(example=1, gt=1)
 
 class UserLogin(BaseModel):
     email: str = Field(example='example@mail.com', max_length=64, pattern=re.compile(r'[^@]+@[^@]+\.[^@]+'))
@@ -24,13 +24,15 @@ class CreateCourse(BaseModel):
     name: str = Field(example='Программирование')
     desc: str | None = Field(example='')
     price: float = Field(example=5000.0)
+    category_id: int = Field(example=1)
+    level_id: int = Field(example=1)
 
 
 class CreateCategory(BaseModel):
     name: str = Field(example='ИТ', min_length=1, max_length=32)
 
 
-class CreateDifficulty(BaseModel):
+class CreateLevel(BaseModel):
     name: str = Field(example='Легко', min_length=1, max_length=32)
 
 

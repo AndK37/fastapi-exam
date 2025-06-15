@@ -43,11 +43,11 @@ class Course(Base):
     price = Column(Float, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=False)
-    difficulty_id = Column(Integer, ForeignKey('difficulties.id'), nullable=False)
+    level_id = Column(Integer, ForeignKey('levels.id'), nullable=False)
 
     user = relationship('User', backref='courses')
     category = relationship('Category', backref='courses')
-    difficulty = relationship('Difficulty', backref='courses')
+    level = relationship('Level', backref='courses')
 
 
 class Category(Base):
@@ -56,8 +56,8 @@ class Category(Base):
     name = Column(String(32), nullable=False, unique=True)
 
 
-class Difficulty(Base):
-    __tablename__ = 'difficulties'
+class Level(Base):
+    __tablename__ = 'levels'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     name = Column(String(32), nullable=False, unique=True)
 

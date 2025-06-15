@@ -25,7 +25,7 @@ class BaseCategory(BaseModel):
     name: str = Field(example='ИТ')
 
 
-class BaseDifficulty(BaseModel):
+class BaseLevel(BaseModel):
     id: int = Field(example=1)
     name: str = Field(example='Легко')
 

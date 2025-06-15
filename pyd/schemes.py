@@ -10,7 +10,7 @@ class UserSchema(BaseUser):
 class CourseSchema(BaseCourse):
     user: UserSchema
     category: BaseCategory
-    difficulty: BaseDifficulty
+    level: BaseLevel
 #   lessons: List[Baselesson] ???
 
 class LessonSchema(BaseLesson):

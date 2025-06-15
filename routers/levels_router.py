@@ -8,12 +8,12 @@ from auth import AuthHandler
 
 
 
-router = APIRouter(prefix='/api/difficulties', tags=['Difficulties'])
+router = APIRouter(prefix='/api/levels', tags=['Levels'])
 auth_handler = AuthHandler()
 
-models_entity = models.Difficulty
-pyd_base = pyd.BaseDifficulty
-pyd_create = pyd.CreateDifficulty
+models_entity = models.Level
+pyd_base = pyd.BaseLevel
+pyd_create = pyd.CreateLevel
 
 message_404 = 'Сложность не найдена'
 message_404_many = 'Сложности не найдены'

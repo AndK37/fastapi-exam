@@ -33,13 +33,13 @@ with Session(bind=engine) as session:
     categories = [category1, category2, category3]
     session.add_all(categories)
 
-    difficulty1 = models.Difficulty(name='Легко')
-    difficulty2 = models.Difficulty(name='Нормально')
-    difficulty3 = models.Difficulty(name='Сложно')
-    difficulties = [difficulty1, difficulty2, difficulty3]
+    level1 = models.Level(name='Легко')
+    level2 = models.Level(name='Нормально')
+    level3 = models.Level(name='Сложно')
+    difficulties = [level1, level2, level3]
     session.add_all(difficulties)
 
-    course1 = models.Course(name='Программирование - легко', desc='', price=5000.0, user_id=2, category_id=1, difficulty_id=1)
+    course1 = models.Course(name='Программирование - легко', desc='', price=5000.0, user_id=2, category_id=1, level_id=1)
     lesson11 = models.Lesson(course_id=1, name='Программирование 1', video_url='1', duration=40, order=1)
     lesson12 = models.Lesson(course_id=1, name='Программирование 2', video_url='2', duration=40, order=2)
     lesson13 = models.Lesson(course_id=1, name='Программирование 3', video_url='3', duration=40, order=3)
@@ -47,7 +47,7 @@ with Session(bind=engine) as session:
     course_lesson12 = models.CourseLesson(course_id=1, lesson_id=2)
     course_lesson13 = models.CourseLesson(course_id=1, lesson_id=3)
 
-    course2 = models.Course(name='Физика - средне', desc='', price=10000.0, user_id=2, category_id=2, difficulty_id=2)
+    course2 = models.Course(name='Физика - средне', desc='', price=10000.0, user_id=2, category_id=2, level_id=2)
     lesson21 = models.Lesson(course_id=2, name='Физика 1', video_url='4', duration=40, order=1)
     lesson22 = models.Lesson(course_id=2, name='Физика 2', video_url='5', duration=40, order=2)
     lesson23 = models.Lesson(course_id=2, name='Физика 3', video_url='6', duration=40, order=3)
@@ -55,7 +55,7 @@ with Session(bind=engine) as session:
     course_lesson22 = models.CourseLesson(course_id=2, lesson_id=5)
     course_lesson23 = models.CourseLesson(course_id=2, lesson_id=6)
 
-    course3 = models.Course(name='Химия - сложно', desc='', price=15000.0, user_id=2, category_id=3, difficulty_id=3)
+    course3 = models.Course(name='Химия - сложно', desc='', price=15000.0, user_id=2, category_id=3, level_id=3)
     lesson31 = models.Lesson(course_id=3, name='Химия 1', video_url='7', duration=40, order=1)
     lesson32 = models.Lesson(course_id=3, name='Химия 2', video_url='8', duration=40, order=2)
     lesson33 = models.Lesson(course_id=3, name='Химия 3', video_url='9', duration=40, order=3)
