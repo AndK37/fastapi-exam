@@ -29,7 +29,7 @@ class CourseRecord(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=False)
     record_date = Column(DateTime(timezone=True), server_default=func.now())
-    progression = Column(Float, nullable=True, default=None)
+    progression = Column(Float, nullable=True, default=0.0)
 
     user = relationship('User', backref='courses_records')
     course = relationship('Course', backref='courses_records')

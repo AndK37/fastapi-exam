@@ -30,6 +30,23 @@ def auth(jwt, db):
     
     return user_db.id
     
+def discount(courses, jwt, db):
+    user_db = db.query(models.User).filter(models.User.email == jwt).first()
+    course_records = db.query(models.CourseRecord).filter(models.CourseRecord.user_id == user_db.id).all()
+    completed = 0
+    for record in course_records:
+        if record.progression == 1:
+            completed += 1
+
+    for course in courses:
+        if completed == 1:
+            course.price -= course.price * 0.1
+        if completed == 2:
+            course.price -= course.price * 0.2
+        if completed >= 3:
+            course.price -= course.price * 0.3
+    
+    return courses
 
 
 @router.get('/', response_model=List[pyd_base])
@@ -74,6 +91,58 @@ def get_courses(page: int | None = Query(default=None, gt=0),
 
 @router.get('/{entity_id}', response_model=pyd_base)
 def get_entity(entity_id: int, db: Session=Depends(get_db)):
+    entity = db.query(models_entity).filter(models_entity.id == entity_id).first()
+
+    if not entity:
+        raise HTTPException(404, message_404)
+
+    return entity
+
+
+@router.get('/auth/', response_model=List[pyd_base])
+def get_courses_auth(page: int | None = Query(default=None, gt=0), 
+                limit: int | None = Query(default=None, gt=0), 
+                category: str | None = Query(default=None, max_length=32), 
+                level: str | None = Query(default=None, max_length=32), 
+                db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+    
+    courses = db.query(models_entity).all()
+    courses_response = courses.copy()
+    if not courses:
+        raise HTTPException(404, message_404_many)    
+
+    if category:
+        category_db = db.query(models.Category).filter(models.Category.name == category).first()
+        if not category_db:
+            courses = []
+            courses_response = []
+
+        for course in courses:
+            if course.category_id != category_db.id:
+                courses_response.remove(course)
+                courses = courses_response.copy()
+    if level:
+        level_db = db.query(models.Level).filter(models.Level.name.like(level)).first()
+        if not level_db:
+            courses = []
+            courses_response = []
+
+        for course in courses:
+            if course.level_id != level_db.id:
+                courses_response.remove(course)
+    
+    courses_response = discount(courses_response, jwt, db)
+
+    if not limit:
+        return courses_response
+    if not page:
+        page = 1
+
+    return courses_response[limit * (page - 1):(limit * page)]
+    
+
+@router.get('/auth/{entity_id}', response_model=pyd_base)
+def get_entity_auth(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
     entity = db.query(models_entity).filter(models_entity.id == entity_id).first()
 
     if not entity:

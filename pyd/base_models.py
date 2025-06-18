@@ -36,3 +36,15 @@ class BaseLesson(BaseModel):
     video_url: str = Field(example='./videos/prog1.mp4')
     duration: float = Field(example=40.0)
     order: int = Field(example=1)
+
+
+class BaseCompletedLesson(BaseModel):
+    id: int = Field(example=1)
+
+
+class BaseCourseLesson(BaseModel):
+    id: int = Field(example=1)
+
+
+class BaseCourseRecord(BaseModel):
+    id: int = Field(example=1)
