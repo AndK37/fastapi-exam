@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table, Flo
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 
-#212342314
+
 
 class User(Base):
     __tablename__ = 'users'
