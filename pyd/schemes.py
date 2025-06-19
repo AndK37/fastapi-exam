@@ -22,11 +22,6 @@ class CompletedLessonSchema(BaseCompletedLesson):
     user: UserSchema
 
 
-class CourseLessonSchema(BaseCourseLesson):
-    course: CourseSchema
-    lesson: LessonSchema
-
-
 class CourseRecordSchema(BaseCourseRecord):
     user: UserSchema
     course: CourseSchema

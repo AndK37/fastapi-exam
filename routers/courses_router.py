@@ -5,11 +5,13 @@ import models
 from typing import List
 import pyd
 from auth import AuthHandler
+from log import Logger
 
 
 
 router = APIRouter(prefix='/api/courses', tags=['Courses'])
 auth_handler = AuthHandler()
+logger = Logger()
 
 models_entity = models.Course
 pyd_base = pyd.CourseSchema
@@ -25,25 +27,19 @@ def auth(jwt, db):
     user_db = db.query(models.User).filter(models.User.email == jwt).first()
     if not user_db:
         raise HTTPException(404, 'Пользователь не найден')
-    if user_db.role_id != 3 and user_db.role_id != 2:
-        raise HTTPException(403, 'Доступ запрещен')
     
-    return user_db.id
+    return {'id': user_db.id, 'role_id': user_db.role_id}
     
 def discount(courses, jwt, db):
     user_db = db.query(models.User).filter(models.User.email == jwt).first()
-    course_records = db.query(models.CourseRecord).filter(models.CourseRecord.user_id == user_db.id).all()
-    completed = 0
-    for record in course_records:
-        if record.progression == 1:
-            completed += 1
+    course_records = db.query(models.CourseRecord).filter(models.CourseRecord.user_id == user_db.id).count()
 
     for course in courses:
-        if completed == 1:
+        if course_records == 1:
             course.price -= course.price * 0.1
-        if completed == 2:
+        if course_records == 2:
             course.price -= course.price * 0.2
-        if completed >= 3:
+        if course_records >= 3:
             course.price -= course.price * 0.3
     
     return courses
@@ -147,38 +143,51 @@ def get_entity_auth(entity_id: int, db: Session=Depends(get_db), jwt=Depends(aut
 
     if not entity:
         raise HTTPException(404, message_404)
-
-    return entity
+    entity = discount([entity], jwt, db)
+    return entity[0]
 
 
 @router.post('/', response_model=pyd_base)
 def create_entity(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_id = auth(jwt, db)
+    user_data = auth(jwt, db)
+    if user_data['role_id'] == 1:
+        raise HTTPException(403, 'Доступ запрещен')
 
     if db.query(models_entity).filter(models_entity.name == entity.name).first():
         raise HTTPException(400, message_already_exists)
+    if not db.query(models.Category).filter(models.Category.id == entity.category_id).first():
+        raise HTTPException(404, 'Категория не существует')
+    if not db.query(models.Level).filter(models.Level.id == entity.level_id).first():
+        raise HTTPException(404, 'Сложность не существует')
 
     entity_db = models_entity()
     entity_db.name = entity.name
     entity_db.desc = entity.desc
     entity_db.price = entity.price
-    entity_db.user_id = user_id
+    entity_db.user_id = user_data['id']
     entity_db.category_id = entity.category_id
     entity_db.level_id = entity.level_id
 
     db.add(entity_db)
     db.commit()
 
+    logger.add('INSERT', entity_db.__tablename__, entity_db)
     return entity_db
 
 
 @router.put('/{entity_id}', response_model=pyd_base)
 def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_id = auth(jwt, db)
+    user_data = auth(jwt, db)
 
-    entity_db = db.query(models_entity).filter(models_entity.id == entity_id, models_entity.user_id == user_id).first()
+    entity_db = db.query(models_entity).filter(models_entity.id == entity_id, models_entity.user_id == user_data['id']).first()
     if not entity_db:
         raise HTTPException(404, message_404)
+    if db.query(models_entity).filter(models_entity.name == entity.name).first():
+        raise HTTPException(400, message_already_exists)
+    if not db.query(models.Category).filter(models.Category.id == entity.category_id).first():
+        raise HTTPException(404, 'Категория не существует')
+    if not db.query(models.Level).filter(models.Level.id == entity.level_id).first():
+        raise HTTPException(404, 'Сложность не существует')
     
     entity_db.name = entity.name
     entity_db.desc = entity.desc
@@ -188,18 +197,23 @@ def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db
 
     db.commit()
 
+    logger.add('UPDATE', entity_db.__tablename__, entity_db)
     return entity_db
 
 
 @router.delete('/{entity_id}')
 def delete_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
-    user_id = auth(jwt, db)
+    user_data = auth(jwt, db)
 
-    entity_db = db.query(models_entity).filter(models_entity.id == entity_id, models_entity.user_id == user_id).first()
+    entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
     if not entity_db:
         raise HTTPException(404, message_404)
-    
+    if user_data['role_id'] != 3:
+        if entity_db.user_id != user_data['id']:
+            raise HTTPException(403, 'Доступ запрещен')
+
     db.delete(entity_db)
     db.commit()
 
+    logger.add('DELETE', entity_db.__tablename__, entity_db)
     return {'message': delete_message(entity_db.name)}

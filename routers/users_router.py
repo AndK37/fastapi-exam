@@ -5,11 +5,13 @@ import models
 from typing import List
 import pyd
 from auth import AuthHandler
+from log import Logger
 
 
 
 router = APIRouter(prefix='/api/users', tags=['Users'])
 auth_handler = AuthHandler()
+logger = Logger()
 
 models_entity = models.User
 pyd_base = pyd.UserSchema
@@ -79,6 +81,8 @@ def register(entity: pyd_create, db: Session=Depends(get_db)):
         raise HTTPException(400, message_already_exists)
     if entity.role_id == 3:
         raise HTTPException(403, 'Доступ запрещен')
+    if not db.query(models.Role).filter(models.Role.id == entity.role_id).first():
+        raise HTTPException(404, 'Роль не существует')
 
     entity_db = models_entity()
     entity_db.surname = entity.surname
@@ -90,11 +94,12 @@ def register(entity: pyd_create, db: Session=Depends(get_db)):
     db.add(entity_db)
     db.commit()
 
+    logger.add('INSERT', entity_db.__tablename__, entity_db)
     return entity_db
 
 
 @router.put('/{entity_id}', response_model=pyd_base)
-def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
+def update_entity(entity_id: int, entity: pyd.UpdateUser, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
     user_data = auth(jwt, db)
     if user_data['role_id'] != 3:
         if user_data['id'] != entity_id:
@@ -106,12 +111,11 @@ def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db
     
     entity_db.surname = entity.surname
     entity_db.name = entity.name
-    entity_db.email = entity.email
     entity_db.password_hash = auth_handler.get_password_hash(entity.password)
-    entity_db.role_id = entity.role_id
 
     db.commit()
 
+    logger.add('UPDATE', entity_db.__tablename__, entity_db)
     return entity_db
 
 
@@ -129,4 +133,5 @@ def delete_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_
     db.delete(entity_db)
     db.commit()
 
-    return {'message': delete_message(entity_db.surname + entity_db.name)}
+    logger.add('DELETE', entity_db.__tablename__, entity_db)
+    return {'message': delete_message(entity_db.surname + ' ' + entity_db.name)}

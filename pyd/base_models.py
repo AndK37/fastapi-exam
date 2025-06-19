@@ -42,9 +42,7 @@ class BaseCompletedLesson(BaseModel):
     id: int = Field(example=1)
 
 
-class BaseCourseLesson(BaseModel):
-    id: int = Field(example=1)
-
-
 class BaseCourseRecord(BaseModel):
     id: int = Field(example=1)
+    price: float = Field(example=5000.0)
+    progression: float = Field(example=1)

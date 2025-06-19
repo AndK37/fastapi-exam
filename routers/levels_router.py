@@ -5,11 +5,13 @@ import models
 from typing import List
 import pyd
 from auth import AuthHandler
+from log import Logger
 
 
 
 router = APIRouter(prefix='/api/levels', tags=['Levels'])
 auth_handler = AuthHandler()
+logger = Logger()
 
 models_entity = models.Level
 pyd_base = pyd.BaseLevel
@@ -63,6 +65,7 @@ def create_entity(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(a
     db.add(entity_db)
     db.commit()
 
+    logger.add('INSERT', entity_db.__tablename__, entity_db)
     return entity_db
 
 
@@ -73,11 +76,14 @@ def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db
     entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
     if not entity_db:
         raise HTTPException(404, message_404)
+    if db.query(models_entity).filter(models_entity.name == entity.name).first():
+        raise HTTPException(400, message_already_exists)
     
     entity_db.name = entity.name
 
     db.commit()
 
+    logger.add('UPDATE', entity_db.__tablename__, entity_db)
     return entity_db
 
 
@@ -92,4 +98,5 @@ def delete_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_
     db.delete(entity_db)
     db.commit()
 
+    logger.add('DELETE', entity_db.__tablename__, entity_db)
     return {'message': delete_message(entity_db.name)}

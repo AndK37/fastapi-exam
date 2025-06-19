@@ -5,11 +5,13 @@ import models
 from typing import List
 import pyd
 from auth import AuthHandler
+from log import Logger
 
 
 
 router = APIRouter(prefix='/api/completedlessons', tags=['CompletedLessons'])
 auth_handler = AuthHandler()
+logger = Logger()
 
 models_entity = models.CompletedLesson
 pyd_base = pyd.CompletedLessonSchema
@@ -29,18 +31,12 @@ def auth(jwt, db):
     return {'id': user_db.id, 'role_id': user_db.role_id}
 
 def recalculate_progression(user_id, lesson_id, db):
-    course = db.query(models.CourseLesson).filter(models.CourseLesson.lesson_id == lesson_id).first()
-    completed_lessons = db.query(models.CompletedLesson).filter(models.CompletedLesson.user_id == user_id).all()
-    course_lessons = db.query(models.CourseLesson).filter(models.CourseLesson.course_id == course.course_id).all()
-    
-    complete = 0
-    for course_lesson in course_lessons:
-        for completed_lesson in completed_lessons:
-            if course_lesson.lesson_id == completed_lesson.lesson_id:
-                complete += 1
-    
-    course_record = db.query(models.CourseRecord).filter(models.CourseRecord.course_id == course.course_id, models.CourseRecord.user_id == user_id).first()
-    course_record.progression = round(complete / len(course_lessons), 2)
+    lesson = db.query(models.Lesson).filter(models.Lesson.id == lesson_id).first()
+    course = db.query(models.Course).filter(models.Course.id == lesson.course_id).first()
+    completed_lessons = db.query(models.CompletedLesson).filter(models.CompletedLesson.user_id == user_id).count()
+    course_lessons = db.query(models.Lesson).filter(models.Lesson.course_id == course.id).count()
+    course_record = db.query(models.CourseRecord).filter(models.CourseRecord.course_id == course.id, models.CourseRecord.user_id == user_id).first()
+    course_record.progression = round(completed_lessons / course_lessons, 2)
 
     db.commit()
 
@@ -72,7 +68,7 @@ def get_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_han
     return entity
 
 
-@router.get('/{user_id}/all', response_model=List[pyd.UserCompletedLessonsSchema])
+@router.get('/{user_id}/all', response_model=List[pyd_base])
 def get_all_user_completed_lessons(user_id: int, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
     user_data = auth(jwt, db)
     if user_data['role_id'] != 3:
@@ -98,6 +94,11 @@ def complete_lesson(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends
 
     if db.query(models_entity).filter(models_entity.user_id == entity.user_id, models_entity.lesson_id == entity.lesson_id).first():
         raise HTTPException(400, message_already_exists)
+    lesson = db.query(models.Lesson).filter(models.Lesson.id == entity.lesson_id).first()
+    if not lesson:
+        raise HTTPException(404, 'Урок не найден')
+    if not db.query(models.CourseRecord).filter(models.CourseRecord.course_id == lesson.course_id, models.CourseRecord.user_id == user_data['id']).first():
+        raise HTTPException(403, 'Доступ запрещен')
 
     entity_db = models_entity()
     entity_db.lesson_id = entity.lesson_id
@@ -106,8 +107,9 @@ def complete_lesson(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends
     db.add(entity_db)
     db.commit()
 
-    recalculate_progression(user_data['id'], entity.lesson_id, db)
+    recalculate_progression(entity.user_id, entity.lesson_id, db)
 
+    logger.add('INSERT', entity_db.__tablename__, entity_db)
     return entity_db
 
 
@@ -115,18 +117,22 @@ def complete_lesson(entity: pyd_create, db: Session=Depends(get_db), jwt=Depends
 def update_entity(entity_id: int, entity: pyd_create, db: Session=Depends(get_db), jwt=Depends(auth_handler.auth_wrapper)):
     user_data = auth(jwt, db)
     if user_data['role_id'] != 3:
-        if user_data['id'] != entity.user_id:
-            raise HTTPException(403, 'Доступ запрещен')
+        raise HTTPException(403, 'Доступ запрещен')
 
     entity_db = db.query(models_entity).filter(models_entity.id == entity_id).first()
     if not entity_db:
         raise HTTPException(404, message_404)
+    if db.query(models_entity).filter(models_entity.user_id == entity.user_id, models_entity.lesson_id == entity.lesson_id).first():
+        raise HTTPException(400, message_already_exists)
     
     entity_db.lesson_id = entity.lesson_id
     entity_db.user_id = entity.user_id
 
     db.commit()
 
+    recalculate_progression(entity.user_id, entity.lesson_id, db)
+
+    logger.add('UPDATE', entity_db.__tablename__, entity_db)
     return entity_db
 
 
@@ -144,4 +150,7 @@ def delete_entity(entity_id: int, db: Session=Depends(get_db), jwt=Depends(auth_
     db.delete(entity_db)
     db.commit()
 
-    return {'message': delete_message(entity_db.name)}
+    recalculate_progression(entity_db.user_id, entity_db.lesson_id, db)
+
+    logger.add('DELETE', entity_db.__tablename__, entity_db)
+    return {'message': delete_message(entity_db.id)}

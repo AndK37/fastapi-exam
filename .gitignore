@@ -2,3 +2,5 @@
 .env
 *.sqlite
 __pycache__/
+lessons
+log.txt
